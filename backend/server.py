@@ -333,9 +333,28 @@ async def get_posts(user_id: str = Depends(get_current_user)):
     # Get all posts sorted by created_at descending
     posts = await db.posts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Get user info for each post
+    if not posts:
+        return []
+    
+    # Batch fetch all users
+    user_ids = list(set(post["user_id"] for post in posts))
+    users = await db.users.find(
+        {"id": {"$in": user_ids}}, 
+        {"_id": 0, "password_hash": 0}
+    ).to_list(None)
+    users_map = {user["id"]: user for user in users}
+    
+    # Batch fetch all validations for current user
+    post_ids = [post["id"] for post in posts]
+    validations = await db.validations.find(
+        {"post_id": {"$in": post_ids}, "user_id": user_id},
+        {"_id": 0, "post_id": 1}
+    ).to_list(None)
+    validated_post_ids = {v["post_id"] for v in validations}
+    
+    # Attach data to posts
     for post in posts:
-        user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
+        user = users_map.get(post["user_id"])
         if user:
             # Ensure skill_category exists for backward compatibility
             if "skill_category" not in user:
@@ -350,11 +369,7 @@ async def get_posts(user_id: str = Depends(get_current_user)):
             post["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
         
         # Check if current user validated this post
-        validation = await db.validations.find_one(
-            {"post_id": post["id"], "user_id": user_id},
-            {"_id": 0}
-        )
-        post["is_validated_by_me"] = validation is not None
+        post["is_validated_by_me"] = post["id"] in validated_post_ids
     
     return posts
 
