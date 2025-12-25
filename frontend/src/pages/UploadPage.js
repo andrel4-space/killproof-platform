@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload as UploadIcon } from 'lucide-react';
+import { Upload as UploadIcon, CheckCircle2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,6 +17,7 @@ const API = `${BACKEND_URL}/api`;
 export default function UploadPage() {
   const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
 
@@ -28,6 +30,7 @@ export default function UploadPage() {
       }
       setVideoFile(file);
       setVideoPreview(URL.createObjectURL(file));
+      toast.success('Video selected successfully!');
     }
   };
 
@@ -39,6 +42,7 @@ export default function UploadPage() {
     }
 
     setUploading(true);
+    setUploadProgress(0);
     const formData = new FormData(e.target);
     formData.append('video', videoFile);
 
@@ -47,11 +51,24 @@ export default function UploadPage() {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
       });
-      toast.success('Skill proof uploaded successfully!');
-      navigate('/');
+      setUploadProgress(100);
+      toast.success(
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-green-600" />
+          <span>Skill proof uploaded successfully!</span>
+        </div>
+      );
+      setTimeout(() => navigate('/'), 500);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Upload failed, please try again');
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -79,8 +96,9 @@ export default function UploadPage() {
               type="text"
               placeholder="What skill are you demonstrating?"
               required
+              disabled={uploading}
               data-testid="upload-title-input"
-              className="h-12"
+              className="h-12 disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -91,30 +109,34 @@ export default function UploadPage() {
               name="description"
               placeholder="Provide a brief description..."
               required
+              disabled={uploading}
               rows={4}
               data-testid="upload-description-input"
-              className="resize-none"
+              className="resize-none disabled:opacity-60 disabled:cursor-not-allowed"
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="video">Video (max 60 seconds)</Label>
-            <div className="border-2 border-dashed border-zinc-200 rounded-lg p-8 text-center hover:border-zinc-300 transition-colors">
+            <div className="border-2 border-dashed border-zinc-200 rounded-lg p-8 text-center hover:border-[#047857] hover:bg-zinc-50 transition-all">
               {videoPreview ? (
                 <div className="space-y-4">
                   <video
                     src={videoPreview}
                     controls
+                    preload="metadata"
                     className="w-full max-h-64 rounded-lg mx-auto"
                     data-testid="video-preview"
                   />
                   <Button
                     type="button"
                     variant="outline"
+                    disabled={uploading}
                     onClick={() => {
                       setVideoFile(null);
                       setVideoPreview(null);
                     }}
+                    className="hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     data-testid="remove-video-button"
                   >
                     Remove Video
@@ -123,12 +145,13 @@ export default function UploadPage() {
               ) : (
                 <label htmlFor="video" className="cursor-pointer block">
                   <UploadIcon className="w-12 h-12 mx-auto text-zinc-400 mb-4" />
-                  <p className="text-zinc-600 mb-2">Click to upload video</p>
+                  <p className="text-zinc-600 mb-2 font-medium">Click to upload video</p>
                   <p className="text-sm text-zinc-500">MP4, WebM, or other video formats</p>
                   <input
                     id="video"
                     type="file"
                     accept="video/*"
+                    disabled={uploading}
                     onChange={handleFileChange}
                     className="hidden"
                     data-testid="upload-video-input"
@@ -138,12 +161,23 @@ export default function UploadPage() {
             </div>
           </div>
 
+          {uploading && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-600 font-medium">Uploading...</span>
+                <span className="text-[#047857] font-bold">{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          )}
+
           <div className="flex gap-4 pt-4">
             <Button
               type="button"
               variant="outline"
+              disabled={uploading}
               onClick={() => navigate('/')}
-              className="flex-1 h-11 rounded-full"
+              className="flex-1 h-11 rounded-full hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               data-testid="cancel-upload-button"
             >
               Cancel
@@ -151,7 +185,7 @@ export default function UploadPage() {
             <Button
               type="submit"
               disabled={uploading || !videoFile}
-              className="flex-1 h-11 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#047857]/20"
+              className="flex-1 h-11 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#047857]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               data-testid="submit-upload-button"
             >
               {uploading ? 'Uploading...' : 'Upload Skill Proof'}
