@@ -78,6 +78,15 @@ async def serve_upload(file_path: str, request: Request):
     # Get file size
     file_size = file_full_path.stat().st_size
     
+    # Common headers for both range and full requests
+    common_headers = {
+        "Accept-Ranges": "bytes",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "Range",
+        "Cache-Control": "public, max-age=3600",
+    }
+    
     # Check for range request
     range_header = request.headers.get("range")
     
@@ -102,8 +111,8 @@ async def serve_upload(file_path: str, request: Request):
                     yield chunk
         
         headers = {
+            **common_headers,
             "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Accept-Ranges": "bytes",
             "Content-Length": str(chunk_size),
         }
         
@@ -118,7 +127,7 @@ async def serve_upload(file_path: str, request: Request):
     return FileResponse(
         path=str(file_full_path),
         media_type=content_type,
-        headers={"Accept-Ranges": "bytes"}
+        headers=common_headers
     )
 
 # Models
