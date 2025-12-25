@@ -64,7 +64,8 @@ class SkillProofAPITester:
         data = {
             "email": self.test_user_email,
             "password": self.test_user_password,
-            "display_name": self.test_user_name
+            "display_name": self.test_user_name,
+            "skill_category": "Coding & Programming"
         }
         
         success, response = self.make_request('POST', 'auth/register', data, expected_status=200)
