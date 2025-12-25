@@ -197,6 +197,8 @@ async def login(login_data: UserLogin):
             "id": user["id"],
             "email": user["email"],
             "display_name": user["display_name"],
+            "skill_category": user.get("skill_category", DEFAULT_SKILL_CATEGORIES[0]),
+            "avatar_url": user.get("avatar_url"),
             "posts_count": user.get("posts_count", 0),
             "validations_received": user.get("validations_received", 0)
         }
