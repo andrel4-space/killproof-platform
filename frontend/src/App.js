@@ -6,6 +6,7 @@ import FeedPage from "@/pages/FeedPage";
 import ProfilePage from "@/pages/ProfilePage";
 import UploadPage from "@/pages/UploadPage";
 import PostPage from "@/pages/PostPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import { Toaster } from "@/components/ui/sonner";
 
 const ProtectedRoute = ({ children }) => {
@@ -33,6 +34,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <UploadPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <LeaderboardPage />
                 </ProtectedRoute>
               }
             />
