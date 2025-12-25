@@ -401,6 +401,9 @@ class SkillProofAPITester:
         print(f"Testing against: {self.base_url}")
         print("=" * 50)
         
+        # Test skill categories first
+        self.test_get_skill_categories()
+        
         # Test authentication flow
         if not self.test_user_registration():
             print("❌ Registration failed, stopping tests")
@@ -412,6 +415,9 @@ class SkillProofAPITester:
             
         if not self.test_get_current_user():
             print("❌ Get current user failed")
+            
+        # Test avatar upload
+        self.test_upload_avatar()
             
         # Test post creation and retrieval
         if not self.test_create_post():
@@ -425,6 +431,13 @@ class SkillProofAPITester:
         self.test_get_posts()
         self.test_get_user_profile()
         self.test_get_user_posts()
+        
+        # Test new search and filter features
+        self.test_search_posts()
+        self.test_filter_posts_by_category()
+        
+        # Test leaderboard
+        self.test_get_leaderboard()
         
         # Print results
         print("=" * 50)
