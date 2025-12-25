@@ -283,29 +283,116 @@ class SkillProofAPITester:
             self.log_test("Get User Profile", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
             return False
 
-    def test_get_user_posts(self):
-        """Test getting user's posts"""
-        if not self.user_id:
-            self.log_test("Get User Posts", False, "No user ID available")
+    def test_get_skill_categories(self):
+        """Test getting skill categories"""
+        success, response = self.make_request('GET', 'skill-categories', expected_status=200)
+        
+        if success and response:
+            try:
+                result = response.json()
+                if 'categories' in result and isinstance(result['categories'], list):
+                    self.log_test("Get Skill Categories", True)
+                    return True
+                else:
+                    self.log_test("Get Skill Categories", False, "Missing categories or not a list")
+                    return False
+            except:
+                self.log_test("Get Skill Categories", False, "Invalid JSON response")
+                return False
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test("Get Skill Categories", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
             return False
-            
-        success, response = self.make_request('GET', f'users/{self.user_id}/posts', expected_status=200)
+
+    def test_search_posts(self):
+        """Test searching posts"""
+        success, response = self.make_request('GET', 'posts/search?query=test', expected_status=200)
         
         if success and response:
             try:
                 posts = response.json()
                 if isinstance(posts, list):
-                    self.log_test("Get User Posts", True)
+                    self.log_test("Search Posts", True)
                     return True
                 else:
-                    self.log_test("Get User Posts", False, "Response is not a list")
+                    self.log_test("Search Posts", False, "Response is not a list")
                     return False
             except:
-                self.log_test("Get User Posts", False, "Invalid JSON response")
+                self.log_test("Search Posts", False, "Invalid JSON response")
                 return False
         else:
             error_msg = response.text if response else "No response"
-            self.log_test("Get User Posts", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
+            self.log_test("Search Posts", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
+            return False
+
+    def test_filter_posts_by_category(self):
+        """Test filtering posts by skill category"""
+        success, response = self.make_request('GET', 'posts/search?skill_category=Coding & Programming', expected_status=200)
+        
+        if success and response:
+            try:
+                posts = response.json()
+                if isinstance(posts, list):
+                    self.log_test("Filter Posts by Category", True)
+                    return True
+                else:
+                    self.log_test("Filter Posts by Category", False, "Response is not a list")
+                    return False
+            except:
+                self.log_test("Filter Posts by Category", False, "Invalid JSON response")
+                return False
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test("Filter Posts by Category", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
+            return False
+
+    def test_get_leaderboard(self):
+        """Test getting leaderboard"""
+        success, response = self.make_request('GET', 'leaderboard', expected_status=200)
+        
+        if success and response:
+            try:
+                users = response.json()
+                if isinstance(users, list):
+                    self.log_test("Get Leaderboard", True)
+                    return True
+                else:
+                    self.log_test("Get Leaderboard", False, "Response is not a list")
+                    return False
+            except:
+                self.log_test("Get Leaderboard", False, "Invalid JSON response")
+                return False
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test("Get Leaderboard", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
+            return False
+
+    def test_upload_avatar(self):
+        """Test uploading user avatar"""
+        # Create a simple test image file (minimal PNG header)
+        test_image_content = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde'
+        
+        files = {
+            'avatar': ('test_avatar.png', test_image_content, 'image/png')
+        }
+        
+        success, response = self.make_request('POST', 'users/avatar', files=files, expected_status=200)
+        
+        if success and response:
+            try:
+                result = response.json()
+                if 'avatar_url' in result and 'message' in result:
+                    self.log_test("Upload Avatar", True)
+                    return True
+                else:
+                    self.log_test("Upload Avatar", False, "Missing avatar_url or message in response")
+                    return False
+            except:
+                self.log_test("Upload Avatar", False, "Invalid JSON response")
+                return False
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test("Upload Avatar", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
             return False
 
     def run_all_tests(self):
