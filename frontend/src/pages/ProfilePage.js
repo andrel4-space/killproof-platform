@@ -1,22 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import PostCard from '@/components/PostCard';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Award, Video } from 'lucide-react';
+import { Award, Video, Camera } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 export default function ProfilePage() {
   const { userId } = useParams();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, updateUser } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const isOwnProfile = currentUser?.id === userId;
 
   useEffect(() => {
     fetchProfile();
@@ -55,11 +61,46 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const response = await axios.post(`${API}/users/avatar`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      toast.success('Avatar uploaded successfully!');
+      fetchProfile();
+      // Update current user in context
+      if (isOwnProfile) {
+        updateUser({ ...currentUser, avatar_url: response.data.avatar_url });
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAFAFA]">
         <Navbar />
-        <div className="text-center py-12 text-zinc-500">Loading profile...</div>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#047857]"></div>
+          <p className="text-zinc-500 mt-4">Loading profile...</p>
+        </div>
       </div>
     );
   }
@@ -78,12 +119,47 @@ export default function ProfilePage() {
       <Navbar />
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-zinc-950 mb-2 tracking-tight" data-testid="profile-display-name">
-            {profile.display_name}
-          </h1>
-          <p className="text-sm text-zinc-500 uppercase tracking-wider">
-            Skill Category: Explain one idea clearly in 60 seconds
-          </p>
+          <div className="flex items-start gap-6 mb-6">
+            {/* Avatar */}
+            <div className="relative group">
+              <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
+                <AvatarImage src={profile.avatar_url ? `${BACKEND_URL}${profile.avatar_url}` : undefined} />
+                <AvatarFallback className="bg-[#047857]/10 text-[#047857] text-3xl font-semibold">
+                  {profile.display_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute bottom-0 right-0 rounded-full w-10 h-10 p-0 shadow-lg hover:scale-110 transition-transform"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    data-testid="upload-avatar-button"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1">
+              <h1 className="text-4xl md:text-5xl font-bold text-zinc-950 mb-2 tracking-tight" data-testid="profile-display-name">
+                {profile.display_name}
+              </h1>
+              <p className="text-sm text-zinc-500 uppercase tracking-wider">
+                {profile.skill_category}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Bento Stats Grid */}
@@ -118,7 +194,7 @@ export default function ProfilePage() {
         {posts.length === 0 ? (
           <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center">
             <p className="text-zinc-600">
-              {currentUser?.id === userId
+              {isOwnProfile
                 ? "You haven't posted any skill proofs yet"
                 : "This user hasn't posted any skill proofs yet"}
             </p>
