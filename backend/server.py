@@ -466,6 +466,11 @@ async def get_leaderboard(limit: int = 10):
         {"_id": 0, "password_hash": 0, "email": 0}
     ).sort("validations_received", -1).limit(limit).to_list(limit)
     
+    # Ensure skill_category exists for backward compatibility
+    for user in users:
+        if "skill_category" not in user:
+            user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
+    
     return users
 
 # Include router
