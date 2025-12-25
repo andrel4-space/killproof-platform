@@ -1,15 +1,19 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+from passlib.context import CryptContext
+import jwt
+import shutil
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,54 +23,317 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# JWT settings
+JWT_SECRET = os.environ.get('JWT_SECRET', 'skillproof-secret-key-change-in-production')
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_HOURS = 720  # 30 days
+
+# Security
+security = HTTPBearer()
+
+# Create uploads directory
+UPLOADS_DIR = ROOT_DIR / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
+
+# Create the main app
 app = FastAPI()
 
-# Create a router with the /api prefix
+# Mount uploads directory for serving videos
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
+# Create API router
 api_router = APIRouter(prefix="/api")
 
+# Models
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    display_name: str
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    email: str
+    display_name: str
+    created_at: str
+    posts_count: int = 0
+    validations_received: int = 0
+
+class Post(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_id: str
+    video_url: str
+    title: str
+    description: str
+    created_at: str
+    validation_count: int = 0
+    user: Optional[User] = None
+    is_validated_by_me: bool = False
+
+class Validation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    post_id: str
+    user_id: str
+    created_at: str
+
+# Helper functions
+def create_access_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    to_encode = {"sub": user_id, "exp": expire}
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def verify_token(token: str) -> str:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user_id
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    return verify_token(credentials.credentials)
+
+# Auth endpoints
+@api_router.post("/auth/register")
+async def register(user_data: UserRegister):
+    # Check if user exists
+    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
     
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-class StatusCheckCreate(BaseModel):
-    client_name: str
-
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
+    # Create user
+    user_id = str(uuid.uuid4())
+    hashed_password = pwd_context.hash(user_data.password)
     
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
+    user_doc = {
+        "id": user_id,
+        "email": user_data.email,
+        "password_hash": hashed_password,
+        "display_name": user_data.display_name,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "posts_count": 0,
+        "validations_received": 0
+    }
     
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+    await db.users.insert_one(user_doc)
+    
+    # Generate token
+    token = create_access_token(user_id)
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user_id,
+            "email": user_data.email,
+            "display_name": user_data.display_name,
+            "posts_count": 0,
+            "validations_received": 0
+        }
+    }
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+@api_router.post("/auth/login")
+async def login(login_data: UserLogin):
+    # Find user
+    user = await db.users.find_one({"email": login_data.email}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    # Verify password
+    if not pwd_context.verify(login_data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    return status_checks
+    # Generate token
+    token = create_access_token(user["id"])
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user["id"],
+            "email": user["email"],
+            "display_name": user["display_name"],
+            "posts_count": user.get("posts_count", 0),
+            "validations_received": user.get("validations_received", 0)
+        }
+    }
 
-# Include the router in the main app
+@api_router.get("/auth/me")
+async def get_me(user_id: str = Depends(get_current_user)):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+# Posts endpoints
+@api_router.post("/posts")
+async def create_post(
+    title: str = Form(...),
+    description: str = Form(...),
+    video: UploadFile = File(...),
+    user_id: str = Depends(get_current_user)
+):
+    # Validate video file
+    if not video.content_type or not video.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="File must be a video")
+    
+    # Save video file
+    post_id = str(uuid.uuid4())
+    file_extension = video.filename.split(".")[-1] if "." in video.filename else "mp4"
+    video_filename = f"{post_id}.{file_extension}"
+    video_path = UPLOADS_DIR / video_filename
+    
+    try:
+        with open(video_path, "wb") as buffer:
+            shutil.copyfileobj(video.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to upload video")
+    
+    # Create post document
+    post_doc = {
+        "id": post_id,
+        "user_id": user_id,
+        "video_filename": video_filename,
+        "title": title,
+        "description": description,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "validation_count": 0
+    }
+    
+    await db.posts.insert_one(post_doc)
+    
+    # Update user posts count
+    await db.users.update_one(
+        {"id": user_id},
+        {"$inc": {"posts_count": 1}}
+    )
+    
+    return {
+        "id": post_id,
+        "message": "Post created successfully"
+    }
+
+@api_router.get("/posts", response_model=List[Post])
+async def get_posts(user_id: str = Depends(get_current_user)):
+    # Get all posts sorted by created_at descending
+    posts = await db.posts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Get user info for each post
+    for post in posts:
+        user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
+        if user:
+            post["user"] = user
+        
+        # Add video URL
+        post["video_url"] = f"/uploads/{post['video_filename']}"
+        
+        # Check if current user validated this post
+        validation = await db.validations.find_one(
+            {"post_id": post["id"], "user_id": user_id},
+            {"_id": 0}
+        )
+        post["is_validated_by_me"] = validation is not None
+    
+    return posts
+
+@api_router.get("/posts/{post_id}", response_model=Post)
+async def get_post(post_id: str, user_id: str = Depends(get_current_user)):
+    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Get user info
+    user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
+    if user:
+        post["user"] = user
+    
+    # Add video URL
+    post["video_url"] = f"/uploads/{post['video_filename']}"
+    
+    # Check if current user validated this post
+    validation = await db.validations.find_one(
+        {"post_id": post_id, "user_id": user_id},
+        {"_id": 0}
+    )
+    post["is_validated_by_me"] = validation is not None
+    
+    return post
+
+@api_router.post("/posts/{post_id}/validate")
+async def validate_post(post_id: str, user_id: str = Depends(get_current_user)):
+    # Check if post exists
+    post = await db.posts.find_one({"id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    # Check if user already validated this post
+    existing_validation = await db.validations.find_one(
+        {"post_id": post_id, "user_id": user_id},
+        {"_id": 0}
+    )
+    if existing_validation:
+        raise HTTPException(status_code=400, detail="You already validated this post")
+    
+    # Create validation
+    validation_doc = {
+        "id": str(uuid.uuid4()),
+        "post_id": post_id,
+        "user_id": user_id,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.validations.insert_one(validation_doc)
+    
+    # Update post validation count
+    await db.posts.update_one(
+        {"id": post_id},
+        {"$inc": {"validation_count": 1}}
+    )
+    
+    # Update post owner's validations_received count
+    await db.users.update_one(
+        {"id": post["user_id"]},
+        {"$inc": {"validations_received": 1}}
+    )
+    
+    return {"message": "Post validated successfully"}
+
+@api_router.get("/users/{user_id_param}", response_model=User)
+async def get_user_profile(user_id_param: str):
+    user = await db.users.find_one({"id": user_id_param}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@api_router.get("/users/{user_id_param}/posts", response_model=List[Post])
+async def get_user_posts(user_id_param: str, user_id: str = Depends(get_current_user)):
+    posts = await db.posts.find({"user_id": user_id_param}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    for post in posts:
+        # Add video URL
+        post["video_url"] = f"/uploads/{post['video_filename']}"
+        
+        # Check if current user validated this post
+        validation = await db.validations.find_one(
+            {"post_id": post["id"], "user_id": user_id},
+            {"_id": 0}
+        )
+        post["is_validated_by_me"] = validation is not None
+    
+    return posts
+
+# Include router
 app.include_router(api_router)
 
 app.add_middleware(
