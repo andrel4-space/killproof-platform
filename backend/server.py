@@ -57,8 +57,8 @@ DEFAULT_SKILL_CATEGORIES = [
 # Create the main app
 app = FastAPI()
 
-# Mount uploads directory for serving videos
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+# Mount uploads directory for serving videos with proper content types
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR), html=False), name="uploads")
 
 # Create API router
 api_router = APIRouter(prefix="/api")
