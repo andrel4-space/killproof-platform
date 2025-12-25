@@ -64,6 +64,7 @@ api_router = APIRouter(prefix="/api")
 
 # Custom route to serve videos with proper content-type
 @app.get("/uploads/{file_path:path}")
+@app.head("/uploads/{file_path:path}")
 async def serve_upload(file_path: str):
     file_full_path = UPLOADS_DIR / file_path
     if not file_full_path.exists() or not file_full_path.is_file():
