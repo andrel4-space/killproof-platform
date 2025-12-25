@@ -511,16 +511,23 @@ async def get_user_profile(user_id_param: str):
 async def get_user_posts(user_id_param: str, user_id: str = Depends(get_current_user)):
     posts = await db.posts.find({"user_id": user_id_param}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
+    if not posts:
+        return []
+    
+    # Batch fetch all validations for current user
+    post_ids = [post["id"] for post in posts]
+    validations = await db.validations.find(
+        {"post_id": {"$in": post_ids}, "user_id": user_id},
+        {"_id": 0, "post_id": 1}
+    ).to_list(None)
+    validated_post_ids = {v["post_id"] for v in validations}
+    
     for post in posts:
         # Add video URL
         post["video_url"] = f"/uploads/{post['video_filename']}"
         
         # Check if current user validated this post
-        validation = await db.validations.find_one(
-            {"post_id": post["id"], "user_id": user_id},
-            {"_id": 0}
-        )
-        post["is_validated_by_me"] = validation is not None
+        post["is_validated_by_me"] = post["id"] in validated_post_ids
     
     return posts
 
