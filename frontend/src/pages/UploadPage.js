@@ -136,6 +136,22 @@ export default function UploadPage() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="skill-category">Skill Category</Label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={uploading}>
+              <SelectTrigger className="h-12" data-testid="upload-skill-category-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {skillCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="video">Video (max 60 seconds)</Label>
             <div className="border-2 border-dashed border-zinc-200 rounded-lg p-8 text-center hover:border-[#047857] hover:bg-zinc-50 transition-all">
               {videoPreview ? (
