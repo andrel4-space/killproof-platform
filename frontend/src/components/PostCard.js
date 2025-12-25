@@ -49,9 +49,16 @@ export default function PostCard({ post, onValidate }) {
 
       <div className="p-6">
         <div className="mb-4">
-          <h3 className="text-xl font-medium text-zinc-950 mb-2 hover:text-[#047857] transition-colors cursor-pointer" data-testid="post-title">
-            {post.title}
-          </h3>
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-xl font-medium text-zinc-950 hover:text-[#047857] transition-colors cursor-pointer" data-testid="post-title">
+              {post.title}
+            </h3>
+            {post.skill_category && (
+              <span className="text-xs px-2 py-1 bg-[#047857]/10 text-[#047857] rounded-full font-medium uppercase tracking-wider">
+                {post.skill_category}
+              </span>
+            )}
+          </div>
           <p className="text-base text-zinc-600 leading-relaxed" data-testid="post-description">
             {post.description}
           </p>
