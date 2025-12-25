@@ -27,7 +27,7 @@ class SkillProofAPITester:
         else:
             print(f"❌ {name} - FAILED: {details}")
         
-    def make_request(self, method, endpoint, data=None, files=None, expected_status=200):
+    def make_request(self, method, endpoint, data=None, files=None, expected_status=200, timeout=30):
         """Make HTTP request with proper headers"""
         url = f"{self.api_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
@@ -41,16 +41,16 @@ class SkillProofAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, timeout=timeout)
             elif method == 'POST':
                 if files:
-                    response = requests.post(url, data=data, files=files, headers=headers)
+                    response = requests.post(url, data=data, files=files, headers=headers, timeout=timeout)
                 else:
-                    response = requests.post(url, json=data, headers=headers)
+                    response = requests.post(url, json=data, headers=headers, timeout=timeout)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers)
+                response = requests.put(url, json=data, headers=headers, timeout=timeout)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=headers)
+                response = requests.delete(url, headers=headers, timeout=timeout)
             
             success = response.status_code == expected_status
             return success, response
