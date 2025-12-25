@@ -1,7 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { LogOut, User, Trophy } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -27,11 +30,25 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => navigate(`/profile/${user?.id}`)}
+              onClick={() => navigate('/leaderboard')}
               className="hover:bg-zinc-100"
+              data-testid="navbar-leaderboard-button"
+            >
+              <Trophy className="w-4 h-4 mr-2" />
+              Leaderboard
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/profile/${user?.id}`)}
+              className="hover:bg-zinc-100 flex items-center gap-2"
               data-testid="navbar-profile-button"
             >
-              <User className="w-4 h-4 mr-2" />
+              <Avatar className="w-6 h-6">
+                <AvatarImage src={user?.avatar_url ? `${BACKEND_URL}${user.avatar_url}` : undefined} />
+                <AvatarFallback className="bg-[#047857]/10 text-[#047857] text-xs font-semibold">
+                  {user?.display_name?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               {user?.display_name}
             </Button>
             <Button
