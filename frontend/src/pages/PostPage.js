@@ -89,13 +89,12 @@ export default function PostPage() {
             </div>
           )}
 
-          <div className="relative aspect-video bg-black video-container">
+          <div className="relative bg-black video-container" style={{ minHeight: '400px', maxHeight: '80vh' }}>
             <video
               src={`${BACKEND_URL}${post.video_url}`}
               controls
               autoPlay={false}
               preload="metadata"
-              muted
               playsInline
               className="w-full h-full"
               data-testid="post-video"
