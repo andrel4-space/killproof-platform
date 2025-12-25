@@ -5,12 +5,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { useEffect } from 'react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 export default function AuthPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [skillCategories, setSkillCategories] = useState([]);
+
+  useEffect(() => {
+    fetchSkillCategories();
+  }, []);
+
+  const fetchSkillCategories = async () => {
+    try {
+      const response = await axios.get(`${API}/skill-categories`);
+      setSkillCategories(response.data.categories);
+    } catch (error) {
+      console.error('Failed to fetch skill categories:', error);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -35,7 +55,8 @@ export default function AuthPage() {
       await register(
         formData.get('email'),
         formData.get('password'),
-        formData.get('display_name')
+        formData.get('display_name'),
+        formData.get('skill_category')
       );
       toast.success('Account created successfully!');
       navigate('/');
@@ -140,6 +161,21 @@ export default function AuthPage() {
                     data-testid="register-password-input"
                     className="h-12"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-skill-category">Skill Category</Label>
+                  <Select name="skill_category" defaultValue={skillCategories[0]} required>
+                    <SelectTrigger className="h-12" data-testid="register-skill-category-select">
+                      <SelectValue placeholder="Select a skill category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {skillCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   type="submit"
