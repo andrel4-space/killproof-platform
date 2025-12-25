@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { Upload as UploadIcon, CheckCircle2 } from 'lucide-react';
@@ -16,10 +17,27 @@ const API = `${BACKEND_URL}/api`;
 
 export default function UploadPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreview, setVideoPreview] = useState(null);
+  const [skillCategories, setSkillCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+
+  useEffect(() => {
+    fetchSkillCategories();
+  }, []);
+
+  const fetchSkillCategories = async () => {
+    try {
+      const response = await axios.get(`${API}/skill-categories`);
+      setSkillCategories(response.data.categories);
+      setSelectedCategory(user?.skill_category || response.data.categories[0]);
+    } catch (error) {
+      console.error('Failed to fetch skill categories:', error);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
