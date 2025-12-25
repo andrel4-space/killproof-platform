@@ -434,6 +434,9 @@ async def search_posts(
         for post in posts:
             user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
             if user:
+                # Ensure skill_category exists for backward compatibility
+                if "skill_category" not in user:
+                    user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
                 post["user"] = user
                 if (query.lower() in post["title"].lower() or 
                     query.lower() in post["description"].lower() or 
@@ -445,10 +448,17 @@ async def search_posts(
         for post in posts:
             user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
             if user:
+                # Ensure skill_category exists for backward compatibility
+                if "skill_category" not in user:
+                    user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
                 post["user"] = user
     
     # Add video URL and validation status
     for post in posts:
+        # Ensure skill_category exists in post for backward compatibility
+        if "skill_category" not in post:
+            post["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
+        
         post["video_url"] = f"/uploads/{post['video_filename']}"
         validation = await db.validations.find_one(
             {"post_id": post["id"], "user_id": user_id},
