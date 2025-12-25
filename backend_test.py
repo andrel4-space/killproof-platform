@@ -144,7 +144,8 @@ class SkillProofAPITester:
         
         data = {
             'title': 'Test Skill Proof',
-            'description': 'This is a test skill demonstration video'
+            'description': 'This is a test skill demonstration video',
+            'skill_category': 'Coding & Programming'
         }
         
         files = {
