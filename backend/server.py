@@ -59,11 +59,26 @@ DEFAULT_SKILL_CATEGORIES = [
 # Create the main app
 app = FastAPI()
 
-# Mount uploads directory for serving videos with proper content types
-app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR), html=False), name="uploads")
-
 # Create API router
 api_router = APIRouter(prefix="/api")
+
+# Custom route to serve videos with proper content-type
+@app.get("/uploads/{file_path:path}")
+async def serve_upload(file_path: str):
+    file_full_path = UPLOADS_DIR / file_path
+    if not file_full_path.exists() or not file_full_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Guess the content type
+    content_type, _ = mimetypes.guess_type(str(file_full_path))
+    if content_type is None:
+        content_type = "application/octet-stream"
+    
+    return FileResponse(
+        path=str(file_full_path),
+        media_type=content_type,
+        filename=file_path.split("/")[-1]
+    )
 
 # Models
 class UserRegister(BaseModel):
