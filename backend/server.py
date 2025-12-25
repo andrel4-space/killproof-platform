@@ -62,10 +62,10 @@ app = FastAPI()
 # Create API router
 api_router = APIRouter(prefix="/api")
 
-# Custom route to serve videos with proper content-type
+# Custom route to serve videos with proper content-type and range support
 @app.get("/uploads/{file_path:path}")
 @app.head("/uploads/{file_path:path}")
-async def serve_upload(file_path: str):
+async def serve_upload(file_path: str, request: Request):
     file_full_path = UPLOADS_DIR / file_path
     if not file_full_path.exists() or not file_full_path.is_file():
         raise HTTPException(status_code=404, detail="File not found")
@@ -75,10 +75,50 @@ async def serve_upload(file_path: str):
     if content_type is None:
         content_type = "application/octet-stream"
     
+    # Get file size
+    file_size = file_full_path.stat().st_size
+    
+    # Check for range request
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header
+        range_match = range_header.replace("bytes=", "").split("-")
+        start = int(range_match[0]) if range_match[0] else 0
+        end = int(range_match[1]) if len(range_match) > 1 and range_match[1] else file_size - 1
+        
+        # Read the requested chunk
+        chunk_size = end - start + 1
+        
+        def iterfile():
+            with open(file_full_path, "rb") as f:
+                f.seek(start)
+                remaining = chunk_size
+                while remaining > 0:
+                    chunk = f.read(min(8192, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+        
+        headers = {
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(chunk_size),
+        }
+        
+        return StreamingResponse(
+            iterfile(),
+            media_type=content_type,
+            headers=headers,
+            status_code=206
+        )
+    
+    # Return full file for non-range requests
     return FileResponse(
         path=str(file_full_path),
         media_type=content_type,
-        filename=file_path.split("/")[-1]
+        headers={"Accept-Ranges": "bytes"}
     )
 
 # Models
