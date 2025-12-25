@@ -152,6 +152,8 @@ async def register(user_data: UserRegister):
         "email": user_data.email,
         "password_hash": hashed_password,
         "display_name": user_data.display_name,
+        "skill_category": user_data.skill_category,
+        "avatar_url": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "posts_count": 0,
         "validations_received": 0
@@ -168,6 +170,8 @@ async def register(user_data: UserRegister):
             "id": user_id,
             "email": user_data.email,
             "display_name": user_data.display_name,
+            "skill_category": user_data.skill_category,
+            "avatar_url": None,
             "posts_count": 0,
             "validations_received": 0
         }
