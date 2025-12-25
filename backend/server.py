@@ -37,6 +37,22 @@ security = HTTPBearer()
 # Create uploads directory
 UPLOADS_DIR = ROOT_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
+AVATARS_DIR = UPLOADS_DIR / "avatars"
+AVATARS_DIR.mkdir(exist_ok=True)
+
+# Default skill categories
+DEFAULT_SKILL_CATEGORIES = [
+    "Explain one idea clearly in 60 seconds",
+    "Coding & Programming",
+    "Design & Creativity",
+    "Business & Marketing",
+    "Science & Education",
+    "Arts & Music",
+    "Sports & Fitness",
+    "Cooking & Food",
+    "DIY & Crafts",
+    "Other"
+]
 
 # Create the main app
 app = FastAPI()
