@@ -270,10 +270,17 @@ async def get_posts(user_id: str = Depends(get_current_user)):
     for post in posts:
         user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
         if user:
+            # Ensure skill_category exists for backward compatibility
+            if "skill_category" not in user:
+                user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
             post["user"] = user
         
         # Add video URL
         post["video_url"] = f"/uploads/{post['video_filename']}"
+        
+        # Ensure skill_category exists in post for backward compatibility
+        if "skill_category" not in post:
+            post["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
         
         # Check if current user validated this post
         validation = await db.validations.find_one(
