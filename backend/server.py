@@ -68,6 +68,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     display_name: str
+    skill_category: str = DEFAULT_SKILL_CATEGORIES[0]
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -78,6 +79,8 @@ class User(BaseModel):
     id: str
     email: str
     display_name: str
+    skill_category: str = DEFAULT_SKILL_CATEGORIES[0]
+    avatar_url: Optional[str] = None
     created_at: str
     posts_count: int = 0
     validations_received: int = 0
@@ -89,10 +92,20 @@ class Post(BaseModel):
     video_url: str
     title: str
     description: str
+    skill_category: str
     created_at: str
     validation_count: int = 0
     user: Optional[User] = None
     is_validated_by_me: bool = False
+
+class LeaderboardUser(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    display_name: str
+    skill_category: str
+    avatar_url: Optional[str] = None
+    validations_received: int
+    posts_count: int
 
 class Validation(BaseModel):
     model_config = ConfigDict(extra="ignore")
