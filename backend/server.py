@@ -216,6 +216,7 @@ async def get_me(user_id: str = Depends(get_current_user)):
 async def create_post(
     title: str = Form(...),
     description: str = Form(...),
+    skill_category: str = Form(...),
     video: UploadFile = File(...),
     user_id: str = Depends(get_current_user)
 ):
@@ -242,6 +243,7 @@ async def create_post(
         "video_filename": video_filename,
         "title": title,
         "description": description,
+        "skill_category": skill_category,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "validation_count": 0
     }
