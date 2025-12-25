@@ -389,30 +389,43 @@ async def search_posts(
     # Get posts
     posts = await db.posts.find(search_filter, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
+    if not posts:
+        return []
+    
+    # Batch fetch all users
+    user_ids = list(set(post["user_id"] for post in posts))
+    users = await db.users.find(
+        {"id": {"$in": user_ids}}, 
+        {"_id": 0, "password_hash": 0}
+    ).to_list(None)
+    users_map = {user["id"]: user for user in users}
+    
+    # Attach user info to all posts first
+    for post in posts:
+        user = users_map.get(post["user_id"])
+        if user:
+            # Ensure skill_category exists for backward compatibility
+            if "skill_category" not in user:
+                user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
+            post["user"] = user
+    
     # Filter by query if provided (search in title, description, or user display_name)
     if query:
         filtered_posts = []
         for post in posts:
-            user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
-            if user:
-                # Ensure skill_category exists for backward compatibility
-                if "skill_category" not in user:
-                    user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
-                post["user"] = user
-                if (query.lower() in post["title"].lower() or 
-                    query.lower() in post["description"].lower() or 
-                    query.lower() in user["display_name"].lower()):
-                    filtered_posts.append(post)
+            if post.get("user") and (query.lower() in post["title"].lower() or 
+                query.lower() in post["description"].lower() or 
+                query.lower() in post["user"]["display_name"].lower()):
+                filtered_posts.append(post)
         posts = filtered_posts
-    else:
-        # Add user info for all posts
-        for post in posts:
-            user = await db.users.find_one({"id": post["user_id"]}, {"_id": 0, "password_hash": 0})
-            if user:
-                # Ensure skill_category exists for backward compatibility
-                if "skill_category" not in user:
-                    user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
-                post["user"] = user
+    
+    # Batch fetch all validations for current user
+    post_ids = [post["id"] for post in posts]
+    validations = await db.validations.find(
+        {"post_id": {"$in": post_ids}, "user_id": user_id},
+        {"_id": 0, "post_id": 1}
+    ).to_list(None)
+    validated_post_ids = {v["post_id"] for v in validations}
     
     # Add video URL and validation status
     for post in posts:
@@ -421,11 +434,7 @@ async def search_posts(
             post["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
         
         post["video_url"] = f"/uploads/{post['video_filename']}"
-        validation = await db.validations.find_one(
-            {"post_id": post["id"], "user_id": user_id},
-            {"_id": 0}
-        )
-        post["is_validated_by_me"] = validation is not None
+        post["is_validated_by_me"] = post["id"] in validated_post_ids
     
     return posts
 
