@@ -58,7 +58,7 @@ export default function FeedPage() {
           </div>
           <Button
             onClick={() => navigate('/upload')}
-            className="h-11 px-6 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#047857]/20"
+            className="h-11 px-6 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#047857]/20 hover:shadow-[#047857]/30"
             data-testid="upload-button"
           >
             <Upload className="w-4 h-4 mr-2" />
@@ -67,13 +67,16 @@ export default function FeedPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-zinc-500">Loading posts...</div>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#047857]"></div>
+            <p className="text-zinc-500 mt-4">Loading posts...</p>
+          </div>
         ) : posts.length === 0 ? (
-          <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center">
+          <div className="bg-white rounded-xl border border-zinc-200 p-12 text-center shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
             <p className="text-zinc-600 mb-4">No skill proofs yet!</p>
             <Button
               onClick={() => navigate('/upload')}
-              className="h-11 px-8 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-transform shadow-lg shadow-[#047857]/20"
+              className="h-11 px-8 rounded-full bg-[#047857] text-white font-medium hover:bg-[#047857]/90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#047857]/20"
               data-testid="empty-upload-button"
             >
               Be the first to post
