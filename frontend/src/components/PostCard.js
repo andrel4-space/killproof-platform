@@ -32,14 +32,14 @@ export default function PostCard({ post, onValidate }) {
         </div>
       )}
 
-      <div className="relative aspect-video bg-black video-container group">
+      <div className="relative bg-black video-container group" style={{ minHeight: '300px', maxHeight: '600px' }}>
         <video
           src={`${BACKEND_URL}${post.video_url}`}
           controls
           preload="metadata"
           muted
           playsInline
-          className="w-full h-full"
+          className="w-full h-full max-h-[600px]"
           data-testid="post-video"
         />
         {isHovered && (
