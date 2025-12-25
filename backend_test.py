@@ -395,6 +395,31 @@ class SkillProofAPITester:
             self.log_test("Upload Avatar", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
             return False
 
+    def test_get_user_posts(self):
+        """Test getting user's posts"""
+        if not self.user_id:
+            self.log_test("Get User Posts", False, "No user ID available")
+            return False
+            
+        success, response = self.make_request('GET', f'users/{self.user_id}/posts', expected_status=200)
+        
+        if success and response:
+            try:
+                posts = response.json()
+                if isinstance(posts, list):
+                    self.log_test("Get User Posts", True)
+                    return True
+                else:
+                    self.log_test("Get User Posts", False, "Response is not a list")
+                    return False
+            except:
+                self.log_test("Get User Posts", False, "Invalid JSON response")
+                return False
+        else:
+            error_msg = response.text if response else "No response"
+            self.log_test("Get User Posts", False, f"Status: {response.status_code if response else 'None'}, Error: {error_msg}")
+            return False
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting SkillProof API Tests...")
