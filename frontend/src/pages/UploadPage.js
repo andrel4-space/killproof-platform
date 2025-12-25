@@ -63,6 +63,7 @@ export default function UploadPage() {
     setUploadProgress(0);
     const formData = new FormData(e.target);
     formData.append('video', videoFile);
+    formData.append('skill_category', selectedCategory);
 
     try {
       await axios.post(`${API}/posts`, formData, {
