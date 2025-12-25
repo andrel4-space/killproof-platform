@@ -1,0 +1,162 @@
+{
+  "identity": {
+    "name": "SkillProof",
+    "tone": "Professional, Focused, Encouraging, Clear",
+    "archetype": "Swiss & High-Contrast (Authority) mixed with Organic (Growth)",
+    "design_principles": [
+      "Fusion over Imitation: Swiss precision meets organic growth colors",
+      "Content is King: Video is the hero, UI gets out of the way",
+      "Negative Space: Generous padding to create focus",
+      "Contrast: High contrast text for readability, vibrant accents for action"
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "headings": {
+        "family": "Outfit, sans-serif",
+        "weights": ["500", "700"],
+        "usage": "Headings, Big Stats, Navigation"
+      },
+      "body": {
+        "family": "Plus Jakarta Sans, sans-serif",
+        "weights": ["400", "500", "600"],
+        "usage": "Paragraphs, Labels, UI Text"
+      }
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight leading-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-medium tracking-tight",
+      "body_lg": "text-lg leading-relaxed",
+      "body_base": "text-base leading-relaxed text-zinc-600",
+      "caption": "text-sm text-zinc-500 uppercase tracking-wider"
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": "#FAFAFA",
+      "foreground": "#18181B",
+      "card": "#FFFFFF",
+      "card_foreground": "#18181B",
+      "primary": "#047857",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#F4F4F5",
+      "secondary_foreground": "#18181B",
+      "accent": "#BEF264",
+      "accent_foreground": "#1A2E05",
+      "muted": "#F4F4F5",
+      "muted_foreground": "#71717A",
+      "border": "#E4E4E7",
+      "input": "#E4E4E7",
+      "ring": "#047857"
+    },
+    "usage": {
+      "primary_action": "bg-primary text-primary-foreground hover:bg-primary/90",
+      "validation_success": "bg-accent text-accent-foreground",
+      "subtle_border": "border border-zinc-200",
+      "text_high_contrast": "text-zinc-950",
+      "text_muted": "text-zinc-500"
+    }
+  },
+  "layout": {
+    "spacing": {
+      "container_padding": "p-6 md:p-8 lg:p-12",
+      "section_gap": "gap-12",
+      "item_gap": "gap-6"
+    },
+    "grids": {
+      "feed": "flex flex-col gap-8 max-w-xl mx-auto",
+      "profile": "grid grid-cols-1 md:grid-cols-12 gap-8",
+      "bento_stats": "grid grid-cols-2 gap-4"
+    },
+    "containers": {
+      "card": "bg-white border border-zinc-200 rounded-xl p-6",
+      "video_wrapper": "relative aspect-[9/16] md:aspect-video bg-black rounded-lg overflow-hidden shadow-sm"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "h-11 px-8 rounded-full bg-primary text-white font-medium hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-primary/20",
+      "secondary": "h-11 px-6 rounded-full bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-50 transition-colors",
+      "validate": "h-12 px-8 rounded-full bg-accent text-accent-foreground font-bold uppercase tracking-wide hover:brightness-110 active:scale-95 transition-all shadow-[0_0_20px_rgba(190,242,100,0.3)]"
+    },
+    "inputs": {
+      "default": "h-12 rounded-lg border-zinc-200 bg-white px-4 text-base focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+    },
+    "video_player": {
+      "style": "minimal",
+      "controls": "custom overlay",
+      "border_radius": "rounded-xl"
+    }
+  },
+  "visual_enhancers": {
+    "shadows": {
+      "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+      "hover": "shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+    },
+    "borders": {
+      "default": "border border-zinc-200",
+      "active": "border-primary"
+    },
+    "textures": {
+      "noise": "bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"
+    }
+  },
+  "motion": {
+    "transitions": "transition-all duration-300 ease-out",
+    "hover_lift": "hover:-translate-y-1",
+    "click_press": "active:scale-95",
+    "page_enter": "animate-in fade-in slide-in-from-bottom-4 duration-500"
+  },
+  "image_urls": {
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1586710743864-260430279452?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Professional woman portrait (gray shirt)",
+        "category": "user_avatar"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1618587068859-d9903ef41bb2?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Creative professional portrait (black shirt)",
+        "category": "user_avatar"
+      }
+    ],
+    "backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1649182784901-48f5f2d40ecc?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Minimalist abstract waves",
+        "category": "hero_bg"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Use 'Outfit' font for all headings and 'Plus Jakarta Sans' for body text. Import them via Google Fonts in index.css.",
+    "Implement the 'Bento' grid for the user profile stats section.",
+    "The 'Validate' button is the core interaction. Make it prominent with the Accent color (Lime).",
+    "Keep the feed layout single-column and focused. No sidebars on mobile.",
+    "Use the provided image URLs for user avatars in the MVP.",
+    "Ensure all interactive elements have data-testid attributes.",
+    "Do not use gradients for backgrounds. Use solid colors or the provided noise texture.",
+    "For the video player, use a standard HTML5 video tag but wrap it in a styled container with rounded corners."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use sonner for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
