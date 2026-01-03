@@ -397,8 +397,9 @@ async def get_posts(user_id: str = Depends(get_current_user)):
                 user["skill_category"] = DEFAULT_SKILL_CATEGORIES[0]
             post["user"] = user
         
-        # Add video URL
-        post["video_url"] = f"/uploads/{post['video_filename']}"
+        # Add video URL - use stored URL if available (Cloudinary), otherwise construct local URL
+        if "video_url" not in post or not post["video_url"]:
+            post["video_url"] = f"/uploads/{post['video_filename']}"
         
         # Ensure skill_category exists in post for backward compatibility
         if "skill_category" not in post:
