@@ -307,23 +307,43 @@ async def create_post(
     if not video.content_type or not video.content_type.startswith("video/"):
         raise HTTPException(status_code=400, detail="File must be a video")
     
-    # Save video file
     post_id = str(uuid.uuid4())
-    file_extension = video.filename.split(".")[-1] if "." in video.filename else "mp4"
-    video_filename = f"{post_id}.{file_extension}"
-    video_path = UPLOADS_DIR / video_filename
+    video_url = None
     
-    try:
-        with open(video_path, "wb") as buffer:
-            shutil.copyfileobj(video.file, buffer)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to upload video")
+    if USE_CLOUDINARY:
+        # Upload to Cloudinary
+        try:
+            upload_result = cloudinary.uploader.upload(
+                video.file,
+                resource_type="video",
+                public_id=f"skillproof/{post_id}",
+                folder="skillproof/videos",
+                overwrite=True
+            )
+            video_url = upload_result['secure_url']
+            video_filename = f"cloudinary:{post_id}"
+        except Exception as e:
+            logging.error(f"Cloudinary upload failed: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload video to cloud storage")
+    else:
+        # Save to local storage (fallback)
+        file_extension = video.filename.split(".")[-1] if "." in video.filename else "mp4"
+        video_filename = f"{post_id}.{file_extension}"
+        video_path = UPLOADS_DIR / video_filename
+        
+        try:
+            with open(video_path, "wb") as buffer:
+                shutil.copyfileobj(video.file, buffer)
+            video_url = f"/uploads/{video_filename}"
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Failed to upload video")
     
     # Create post document
     post_doc = {
         "id": post_id,
         "user_id": user_id,
         "video_filename": video_filename,
+        "video_url": video_url,
         "title": title,
         "description": description,
         "skill_category": skill_category,
