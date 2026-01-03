@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, status, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -16,9 +16,25 @@ from passlib.context import CryptContext
 import jwt
 import shutil
 import mimetypes
+import cloudinary
+import cloudinary.uploader
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Configure Cloudinary if credentials are available
+USE_CLOUDINARY = all([
+    os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    os.environ.get('CLOUDINARY_API_KEY'),
+    os.environ.get('CLOUDINARY_API_SECRET')
+])
+
+if USE_CLOUDINARY:
+    cloudinary.config(
+        cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        api_key=os.environ.get('CLOUDINARY_API_KEY'),
+        api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+    )
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
