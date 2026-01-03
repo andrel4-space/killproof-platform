@@ -603,6 +603,21 @@ async def upload_avatar(
 async def get_skill_categories():
     return {"categories": DEFAULT_SKILL_CATEGORIES}
 
+# Health check endpoint for UptimeRobot
+@api_router.get("/health")
+async def health_check():
+    """
+    Simple health check endpoint for monitoring services like UptimeRobot.
+    Returns 200 OK with timestamp to confirm server is alive.
+    This endpoint doesn't require authentication.
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": "skillproof-backend",
+        "database": "connected" if client else "disconnected"
+    }
+
 # Leaderboard endpoint
 @api_router.get("/leaderboard", response_model=List[LeaderboardUser])
 async def get_leaderboard(limit: int = 10):
